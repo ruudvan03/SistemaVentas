@@ -43,7 +43,6 @@ export function initModales() {
     document.getElementById('btn-abrir-modal-proveedor')?.addEventListener('click', abrirModalProveedor);
     document.getElementById('btn-cerrar-modal-proveedor')?.addEventListener('click', cerrarModalProveedor);
     document.getElementById('btn-abrir-modal-busqueda')?.addEventListener('click', abrirModalBusqueda);
-    document.getElementById('btn-abrir-modal-busqueda-movil')?.addEventListener('click', abrirModalBusqueda);
     document.getElementById('btn-cerrar-modal-busqueda')?.addEventListener('click', cerrarModalBusqueda);
     document.getElementById('btn-cerrar-modal-cobro')?.addEventListener('click', cerrarModalCobro);
     document.getElementById('btn-cerrar-modal-recuperar')?.addEventListener('click', cerrarModalRecuperar);

@@ -76,6 +76,11 @@
             <span class="text-red-600">F1</span>
         </h2>
 
+        {{-- Cerrar en móvil --}}
+        <button @click="$dispatch('close-sidebar')" class="lg:hidden p-2 text-zinc-400 hover:text-red-600 transition cursor-pointer">
+            <i class="fas fa-times"></i>
+        </button>
+
         <button @click="colapsado = !colapsado"
             class="p-2 text-zinc-500 hover:text-red-600 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors focus:outline-none cursor-pointer"
             :class="colapsado ? 'mx-auto mt-1' : ''"

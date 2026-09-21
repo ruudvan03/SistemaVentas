@@ -65,6 +65,9 @@ export function renderizarTabla() {
 
     document.getElementById('lista-productos').innerHTML = html;
     document.getElementById('total-venta').innerText = state.totalVenta.toFixed(2);
+    // Sincronizar total en panel móvil
+    const totalMovil = document.getElementById('total-venta-movil');
+    if (totalMovil) totalMovil.innerText = state.totalVenta.toFixed(2);
 }
 
 export function cambiarCantidad(index, delta) {

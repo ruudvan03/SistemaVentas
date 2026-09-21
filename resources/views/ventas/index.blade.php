@@ -8,9 +8,15 @@
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #dc2626; border-radius: 10px; }
+
+    /* En móvil: lista de compra ocupa toda la pantalla menos la barra inferior */
+    @media (max-width: 1023px) {
+        #pos-lista { height: calc(100vh - 14rem - 56px); }
+        #pos-panel-movil { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; }
+    }
 </style>
 
-<div id="pos-app" class="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[calc(100vh-120px)] pb-10"
+<div id="pos-app" class="lg:grid lg:grid-cols-12 lg:gap-6 lg:min-h-[calc(100vh-120px)] pb-[13rem] lg:pb-10"
     data-ruta-buscar-producto="{{ url('/ventas/buscar-producto') }}"
     data-ruta-buscar-nombre="{{ url('/ventas/buscar-nombre') }}"
     data-ruta-finalizar="{{ route('ventas.finalizar') }}"
@@ -20,23 +26,23 @@
 >
 
     {{-- LISTA DE COMPRA --}}
-    <div class="lg:col-span-8 bg-white dark:bg-[#0d0d0d] border border-zinc-200 dark:border-white/5 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-white transition-all max-h-[calc(100vh-140px)]">
-        <div class="p-5 border-b border-zinc-100 dark:border-white/5 bg-zinc-50 dark:bg-white/[0.02] flex justify-between items-center shrink-0">
+    <div class="lg:col-span-8 bg-white dark:bg-[#0d0d0d] border border-zinc-200 dark:border-white/5 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-white transition-all lg:max-h-[calc(100vh-140px)]">
+        <div class="p-4 lg:p-5 border-b border-zinc-100 dark:border-white/5 bg-zinc-50 dark:bg-white/[0.02] flex justify-between items-center shrink-0">
             <h3 class="text-zinc-500 dark:text-gray-500 font-black uppercase text-xs tracking-[0.3em]">Lista de Compra</h3>
             <span class="bg-red-600/10 text-red-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-600/20">
                 F1 Activo
             </span>
         </div>
-        
-        <div class="flex-1 overflow-y-auto custom-scrollbar relative">
+
+        <div id="pos-lista" class="flex-1 overflow-y-auto custom-scrollbar relative">
             <table class="w-full text-left border-collapse">
                 <thead class="sticky top-0 bg-white dark:bg-[#0d0d0d] z-20 border-b border-zinc-100 dark:border-white/5 shadow-sm">
                     <tr class="text-zinc-400 dark:text-gray-600 uppercase font-black text-[10px] tracking-[0.2em]">
-                        <th class="p-4 pl-6">Cant.</th>
-                        <th class="p-4">Descripción</th>
-                        <th class="p-4 text-center">Precio</th>
-                        <th class="p-4 text-right">Subtotal</th>
-                        <th class="p-4 pr-6 text-right w-16"></th>
+                        <th class="p-3 lg:p-4 pl-4 lg:pl-6">Cant.</th>
+                        <th class="p-3 lg:p-4">Descripción</th>
+                        <th class="p-3 lg:p-4 text-center hidden sm:table-cell">Precio</th>
+                        <th class="p-3 lg:p-4 text-right">Subtotal</th>
+                        <th class="p-3 lg:p-4 pr-4 lg:pr-6 text-right w-12"></th>
                     </tr>
                 </thead>
                 <tbody id="lista-productos" class="divide-y divide-zinc-100 dark:divide-white/5 font-bold italic text-sm">
@@ -46,10 +52,13 @@
         </div>
     </div>
 
-    {{-- LATERAL DERECHO --}}
-    <div class="lg:col-span-4 flex flex-col gap-5 sticky top-4">
+    {{-- PANEL DERECHO — desktop: columna lateral | móvil: barra fija inferior --}}
+    <div id="pos-panel-movil" class="lg:col-span-4 lg:static lg:flex lg:flex-col lg:gap-5 lg:sticky lg:top-4
+        bg-white dark:bg-[#0d0d0d] lg:bg-transparent border-t border-zinc-200 dark:border-white/10 lg:border-0
+        shadow-[0_-4px_24px_rgba(0,0,0,0.12)] lg:shadow-none">
+
         {{-- SCANNER --}}
-        <div class="bg-white dark:bg-[#0d0d0d] border border-red-600/30 p-5 rounded-2xl shadow-2xl">
+        <div class="bg-white dark:bg-[#0d0d0d] border border-red-600/30 p-4 lg:p-5 lg:rounded-2xl lg:shadow-2xl">
             <div class="flex items-center justify-between mb-2">
                 <label class="text-red-600 text-[10px] font-black uppercase tracking-[0.4em]">Escáner de Código</label>
                 <button id="btn-camara" type="button" title="Escanear con cámara"
@@ -62,40 +71,62 @@
                 </button>
             </div>
             <input type="text" id="scanner" autofocus autocomplete="off"
-                class="w-full bg-zinc-100 dark:bg-black border-b-2 border-red-600 text-red-600 dark:text-red-500 text-4xl p-3 focus:outline-none font-black placeholder-zinc-300 dark:placeholder-zinc-900 transition-all focus:bg-red-600/5 rounded-t-lg"
+                class="w-full bg-zinc-100 dark:bg-black border-b-2 border-red-600 text-red-600 dark:text-red-500 text-3xl lg:text-4xl p-3 focus:outline-none font-black placeholder-zinc-300 dark:placeholder-zinc-900 transition-all focus:bg-red-600/5 rounded-t-lg"
                 placeholder="||||||||||||||||">
         </div>
 
-        {{-- TOTAL --}}
-        <div class="bg-red-600 p-6 rounded-2xl text-white shadow-[0_20px_50px_rgba(220,38,38,0.25)] relative overflow-hidden group select-none">
-            <div class="absolute -right-4 -top-4 text-white/10 text-9xl font-black italic rotate-12 group-hover:rotate-0 transition-transform pointer-events-none">$</div>
-            <p class="text-xs font-black uppercase opacity-70 italic tracking-widest relative z-10">Total a Cobrar</p>
-            <div class="flex items-baseline gap-2 mt-1 relative z-10">
-                <span class="text-3xl font-bold opacity-80">$</span>
-                <span id="total-venta" class="text-6xl xl:text-7xl font-black italic tracking-tighter tabular-nums text-white">0.00</span>
+        {{-- TOTAL + ACCIONES (compacto en móvil) --}}
+        <div class="flex items-center gap-3 px-4 py-3 lg:hidden">
+            {{-- Mini total --}}
+            <div class="flex-1 bg-red-600 rounded-2xl px-4 py-3 relative overflow-hidden">
+                <p class="text-[9px] font-black text-white/70 uppercase tracking-widest">Total</p>
+                <div class="flex items-baseline gap-1">
+                    <span class="text-white font-bold text-sm">$</span>
+                    <span id="total-venta-movil" class="text-white text-2xl font-black italic tabular-nums">0.00</span>
+                </div>
             </div>
+            {{-- Botones compactos --}}
+            <button id="btn-cobrar-movil" type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-4 rounded-2xl font-black text-sm uppercase italic shadow-lg active:scale-95 transition cursor-pointer">
+                COBRAR
+            </button>
+            <button id="btn-abrir-modal-busqueda-movil" type="button" class="bg-zinc-100 dark:bg-white/10 text-zinc-600 dark:text-white px-3 py-4 rounded-2xl font-black text-xs uppercase transition border border-zinc-200 dark:border-white/10 cursor-pointer">
+                <i class="fas fa-search"></i>
+            </button>
         </div>
 
-        {{-- ACCIONES --}}
-        <div class="grid grid-cols-1 gap-3">
-            <button id="btn-cobrar" type="button" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-xl font-black text-xl transition active:scale-95 uppercase italic shadow-lg flex justify-between items-center px-8 cursor-pointer">
-                <span>COBRAR</span>
-                <span class="opacity-60 text-xs bg-black/20 px-2 py-1 rounded">[F9]</span>
-            </button>
-
-            <button id="btn-abrir-recuperar" type="button" class="w-full bg-orange-600 hover:bg-orange-500 text-white p-3.5 rounded-xl font-black text-base transition active:scale-95 uppercase italic shadow-lg flex justify-between items-center px-8 border border-orange-400/20 cursor-pointer">
-                <span>RECUPERAR VENTA</span>
-                <span class="opacity-60 text-xs bg-black/20 px-2 py-1 rounded">[F2]</span>
-            </button>
-
-            <div class="grid grid-cols-2 gap-3">
-                <button id="btn-abrir-modal-busqueda" type="button" class="bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-600 dark:text-gray-300 p-3 rounded-xl font-black uppercase transition border border-zinc-200 dark:border-white/5 tracking-widest text-[11px] cursor-pointer">[F10] BUSCAR</button>
-                <button id="btn-pausar-venta" type="button" class="bg-orange-600/10 hover:bg-orange-600/20 text-orange-600 dark:text-orange-500 p-3 rounded-xl font-black uppercase transition border border-orange-600/20 tracking-widest text-[11px] cursor-pointer">[F4] ESPERA</button>
+        {{-- PANEL COMPLETO — solo visible en desktop --}}
+        <div class="hidden lg:flex lg:flex-col lg:gap-5">
+            {{-- TOTAL --}}
+            <div class="bg-red-600 p-6 rounded-2xl text-white shadow-[0_20px_50px_rgba(220,38,38,0.25)] relative overflow-hidden group select-none">
+                <div class="absolute -right-4 -top-4 text-white/10 text-9xl font-black italic rotate-12 group-hover:rotate-0 transition-transform pointer-events-none">$</div>
+                <p class="text-xs font-black uppercase opacity-70 italic tracking-widest relative z-10">Total a Cobrar</p>
+                <div class="flex items-baseline gap-2 mt-1 relative z-10">
+                    <span class="text-3xl font-bold opacity-80">$</span>
+                    <span id="total-venta" class="text-6xl xl:text-7xl font-black italic tracking-tighter tabular-nums text-white">0.00</span>
+                </div>
             </div>
 
-            <button id="btn-abrir-modal-proveedor" type="button" class="w-full bg-blue-600/10 dark:bg-blue-900/20 hover:bg-blue-600/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 p-3 rounded-xl font-black text-xs transition uppercase tracking-[0.2em] border border-blue-500/20 cursor-pointer">
-                [F8] ENTRADA PROVEEDOR
-            </button>
+            {{-- ACCIONES --}}
+            <div class="grid grid-cols-1 gap-3">
+                <button id="btn-cobrar" type="button" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-xl font-black text-xl transition active:scale-95 uppercase italic shadow-lg flex justify-between items-center px-8 cursor-pointer">
+                    <span>COBRAR</span>
+                    <span class="opacity-60 text-xs bg-black/20 px-2 py-1 rounded">[F9]</span>
+                </button>
+
+                <button id="btn-abrir-recuperar" type="button" class="w-full bg-orange-600 hover:bg-orange-500 text-white p-3.5 rounded-xl font-black text-base transition active:scale-95 uppercase italic shadow-lg flex justify-between items-center px-8 border border-orange-400/20 cursor-pointer">
+                    <span>RECUPERAR VENTA</span>
+                    <span class="opacity-60 text-xs bg-black/20 px-2 py-1 rounded">[F2]</span>
+                </button>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="btn-abrir-modal-busqueda" type="button" class="bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-600 dark:text-gray-300 p-3 rounded-xl font-black uppercase transition border border-zinc-200 dark:border-white/5 tracking-widest text-[11px] cursor-pointer">[F10] BUSCAR</button>
+                    <button id="btn-pausar-venta" type="button" class="bg-orange-600/10 hover:bg-orange-600/20 text-orange-600 dark:text-orange-500 p-3 rounded-xl font-black uppercase transition border border-orange-600/20 tracking-widest text-[11px] cursor-pointer">[F4] ESPERA</button>
+                </div>
+
+                <button id="btn-abrir-modal-proveedor" type="button" class="w-full bg-blue-600/10 dark:bg-blue-900/20 hover:bg-blue-600/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 p-3 rounded-xl font-black text-xs transition uppercase tracking-[0.2em] border border-blue-500/20 cursor-pointer">
+                    [F8] ENTRADA PROVEEDOR
+                </button>
+            </div>
         </div>
     </div>
 

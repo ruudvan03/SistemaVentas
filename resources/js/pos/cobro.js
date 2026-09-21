@@ -128,5 +128,6 @@ export function initCobro() {
     document.getElementById('btn-transferencia')?.addEventListener('click', () => setMetodo('transferencia'));
 
     document.getElementById('btn-cobrar')?.addEventListener('click', cobrar);
+    document.getElementById('btn-cobrar-movil')?.addEventListener('click', cobrar);
     document.getElementById('btn-finalizar-cobro')?.addEventListener('click', finalizarProcesoCobro);
 }

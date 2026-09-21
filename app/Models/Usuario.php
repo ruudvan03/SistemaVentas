@@ -42,8 +42,9 @@ class Usuario extends Authenticatable
 
     public function esAdmin(): bool
     {
-        $rol = strtolower($this->rol ?? '');
-        return $rol === 'admin' || $rol === 'administrador';
+        // BUG 7 CORREGIDO: el enum en BD solo permite 'administrador' y 'cajero'.
+        // El valor 'admin' nunca puede existir, se elimina para evitar confusión.
+        return strtolower($this->rol ?? '') === 'administrador';
     }
 
     /**

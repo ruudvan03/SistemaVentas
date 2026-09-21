@@ -48,57 +48,76 @@ class VentaController extends Controller
             return response()->json(['status' => 'error', 'mensaje' => 'Carrito vacío'], 400);
         }
 
-        try {
-            // Usamos la transacción para asegurar que si falla el stock, no se cree la venta
-            $ventaFinalizada = DB::transaction(function () use ($request) {
+        // BUG 9 CORREGIDO: Validar que en efectivo el monto recibido cubra el total
+        $metodoPago = $request->metodo_pago ?? 'efectivo';
+        if ($metodoPago === 'efectivo') {
+            $montoRecibido = floatval($request->monto_recibido ?? 0);
+            $total = floatval($request->total ?? 0);
+            if ($montoRecibido < $total) {
+                return response()->json([
+                    'status' => 'error',
+                    'mensaje' => 'El monto recibido ($'.number_format($montoRecibido, 2).') es menor al total ($'.number_format($total, 2).').',
+                ], 400);
+            }
+        }
 
-                // 1. Crear la venta con los NUEVOS nombres de tu modelo Venta.php
+        try {
+            $ventaFinalizada = DB::transaction(function () use ($request, $metodoPago) {
+
+                // BUG 7 CORREGIDO: Verificar stock suficiente ANTES de crear la venta
+                foreach ($request->productos as $item) {
+                    $prod = Producto::lockForUpdate()->find($item['id']);
+                    if (! $prod) {
+                        throw new \Exception("Producto con ID {$item['id']} no encontrado.");
+                    }
+                    if (! $prod->es_granel && $prod->stock_actual < $item['cantidad']) {
+                        throw new \Exception("Stock insuficiente para \"{$prod->descripcion}\". Disponible: {$prod->stock_actual}, solicitado: {$item['cantidad']}.");
+                    }
+                }
+
+                // 1. Crear la venta
                 $venta = Venta::create([
-                    'folio' => 'V-'.strtoupper(uniqid()),
-                    'fecha' => now(),
-                    'usuario_id' => Auth::id(),
-                    'cliente_id' => $request->cliente_id ?? null,
-                    'subtotal' => $request->total,
-                    'descuento' => 0,
-                    'total' => $request->total,
-                    'tipo_pago' => $request->metodo_pago ?? 'efectivo', // Usamos tipo_pago
-                    'referencia_pago' => $request->referencia_pago,        // El folio que mandamos del modal
-                    'pago_cliente' => $request->monto_recibido,          // Usamos pago_cliente
-                    'cambio' => $request->cambio,
-                    'estado' => 'completada',
+                    'folio'            => 'V-'.strtoupper(uniqid()),
+                    'fecha'            => now(),
+                    'usuario_id'       => Auth::id(),
+                    'cliente_id'       => $request->cliente_id ?? null,
+                    'subtotal'         => $request->total,
+                    'descuento'        => 0,
+                    'total'            => $request->total,
+                    'tipo_pago'        => $metodoPago,
+                    'referencia_pago'  => $request->referencia_pago,
+                    'pago_cliente'     => $request->monto_recibido,
+                    'cambio'           => $request->cambio,
+                    'estado'           => 'completada',
                 ]);
 
-                // 2. Registrar los detalles
+                // 2. Registrar detalles y descontar stock
                 foreach ($request->productos as $item) {
                     VentaDetalle::create([
-                        'venta_id' => $venta->id,
-                        'producto_id' => $item['id'],
-                        'descripcion' => $item['descripcion'],
-                        'cantidad' => $item['cantidad'],
-                        'precio_unitario' => $item['precio'],
-                        'subtotal' => $item['subtotal'] ?? ($item['precio'] * $item['cantidad']),
+                        'venta_id'       => $venta->id,
+                        'producto_id'    => $item['id'],
+                        'descripcion'    => $item['descripcion'],
+                        'cantidad'       => $item['cantidad'],
+                        'precio_unitario'=> $item['precio'],
+                        'subtotal'       => $item['subtotal'] ?? ($item['precio'] * $item['cantidad']),
                     ]);
 
-                    // 3. Descontar stock (asegúrate que en Producto sea stock_actual o stock)
-                    $prod = Producto::find($item['id']);
-                    if ($prod) {
-                        $prod->decrement('stock_actual', $item['cantidad']);
-                    }
+                    Producto::where('id', $item['id'])->decrement('stock_actual', $item['cantidad']);
                 }
 
                 return $venta;
             });
 
             return response()->json([
-                'status' => 'success',
+                'status'   => 'success',
                 'venta_id' => $ventaFinalizada->id,
-                'folio' => $ventaFinalizada->folio,
+                'folio'    => $ventaFinalizada->folio,
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 'error',
-                'mensaje' => 'Error técnico: '.$e->getMessage(),
+                'status'  => 'error',
+                'mensaje' => $e->getMessage(),
             ], 500);
         }
     }
@@ -156,11 +175,6 @@ class VentaController extends Controller
         $venta->delete();
 
         return back()->with('success', 'Venta eliminada correctamente.');
-    }
-
-    public function producto()
-    {
-        return $this->belongsTo(Producto::class, 'producto_id');
     }
 
     public function abrirCajonManual()

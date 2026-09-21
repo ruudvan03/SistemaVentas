@@ -50,14 +50,36 @@
         </div>
 
         {{-- Indicador: Inventario Crítico --}}
-        <div class="bg-white dark:bg-[#0d0d0d] border border-zinc-200 dark:border-white/5 border-b-8 border-b-orange-600 p-8 rounded-t-3xl rounded-b-md shadow-xl hover:shadow-2xl transition-all group overflow-hidden relative flex items-center min-h-[190px]">
+        <div x-data="{ abierto: false }" class="bg-white dark:bg-[#0d0d0d] border border-zinc-200 dark:border-white/5 border-b-8 border-b-orange-600 p-8 rounded-t-3xl rounded-b-md shadow-xl hover:shadow-2xl transition-all group overflow-hidden relative">
             <div class="relative z-10 w-full">
                 <p class="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3 italic">Stock Crítico</p>
-                <h3 class="text-6xl font-black italic text-orange-600 tracking-tighter">
-                    {{ $productosBajoStock }}
-                </h3>
+                <div class="flex items-end justify-between">
+                    <h3 class="text-6xl font-black italic text-orange-600 tracking-tighter">{{ $productosBajoStock }}</h3>
+                    @if($productosBajoStock > 0)
+                    <button @click="abierto = !abierto"
+                        class="flex items-center gap-1 text-[10px] font-black uppercase text-orange-500 hover:text-orange-400 transition cursor-pointer mb-1">
+                        <span x-text="abierto ? 'OCULTAR' : 'VER CUÁLES'"></span>
+                        <i class="fas fa-chevron-down text-[8px] transition-transform" :class="abierto ? 'rotate-180' : ''"></i>
+                    </button>
+                    @endif
+                </div>
+
+                @if($productosBajoStock > 0)
+                <div x-show="abierto" x-transition x-cloak class="mt-4 space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                    @foreach($productosCriticos as $pc)
+                    <div class="flex items-center justify-between bg-orange-500/5 border border-orange-500/20 rounded-xl px-3 py-2">
+                        <span class="text-[10px] font-black uppercase text-zinc-700 dark:text-zinc-200 truncate max-w-[70%]">{{ $pc->descripcion }}</span>
+                        <span class="text-[10px] font-black {{ $pc->stock_actual <= 0 ? 'text-red-500' : 'text-orange-500' }} shrink-0">
+                            {{ number_format($pc->stock_actual, 1) }} {{ $pc->unidad_medida }}
+                        </span>
+                    </div>
+                    @endforeach
+                </div>
+                @else
+                <p class="text-[10px] font-black text-emerald-500 uppercase mt-2 italic">✓ Todo en orden</p>
+                @endif
             </div>
-            <i class="fas fa-box-open absolute -right-2 -bottom-4 text-9xl text-zinc-900 dark:text-white opacity-[0.05] group-hover:opacity-10 transition-all duration-500"></i>
+            <i class="fas fa-box-open absolute -right-2 -bottom-4 text-9xl text-zinc-900 dark:text-white opacity-[0.05] group-hover:opacity-10 transition-all duration-500 pointer-events-none"></i>
         </div>
 
     </div>

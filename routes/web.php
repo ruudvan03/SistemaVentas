@@ -90,6 +90,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/admin/corte/guardar', [CajaController::class, 'corteStore'])->name('admin.corte.store');
 
         // Gastos manuales del turno — se movió aquí desde soloAdmin, cualquier cajero con turno abierto lo usa
+        Route::get('/admin/gastos', [GastoController::class, 'index'])->name('gastos.index')->middleware('permiso:reportes.ver');
         Route::post('/admin/gastos', [GastoController::class, 'store'])->name('gastos.store');
     });
 
@@ -156,6 +157,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/admin/configuracion-hardware', [ConfiguracionHardwareController::class, 'edit'])->name('admin.hardware.edit');
         Route::put('/admin/configuracion-hardware', [ConfiguracionHardwareController::class, 'update'])->name('admin.hardware.update');
     });
+
+    // Toggle mostrar/ocultar stock en inventario — solo admin
+    Route::post('/admin/toggle-stock', [ConfiguracionHardwareController::class, 'toggleStock'])
+        ->name('admin.toggle.stock')
+        ->middleware('permiso:productos.gestionar');
 
     /*
     |--------------------------------------------------------------------------

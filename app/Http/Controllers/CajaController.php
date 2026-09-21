@@ -75,15 +75,18 @@ class CajaController extends Controller
             ->orderBy('fecha', 'desc')
             ->get();
 
+        // BUG 5 CORREGIDO: acotar compras y gastos al rango del turno (apertura → ahora)
+        $ahora = now();
+
         $comprasDelTurno = Compra::with('producto')
-            ->where('created_at', '>=', $fechaApertura)
+            ->whereBetween('created_at', [$fechaApertura, $ahora])
             ->orderBy('created_at', 'desc')
             ->get();
 
         $totalCompras = $comprasDelTurno->sum('costo_total');
 
         // Gastos manuales registrados durante este turno
-        $gastosDelTurno = Gasto::where('created_at', '>=', $fechaApertura)
+        $gastosDelTurno = Gasto::whereBetween('created_at', [$fechaApertura, $ahora])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -140,8 +143,10 @@ class CajaController extends Controller
             $ventasTarjeta = (clone $queryVentas)->where('tipo_pago', 'tarjeta')->sum('total');
             $ventasTransferencia = (clone $queryVentas)->where('tipo_pago', 'transferencia')->sum('total');
 
-            $totalCompras = Compra::where('created_at', '>=', $fechaApertura)->sum('costo_total');
-            $totalGastos = Gasto::where('created_at', '>=', $fechaApertura)->sum('monto');
+            // BUG 5 CORREGIDO: acotar al rango exacto del turno
+            $fechaCierre = now();
+            $totalCompras = Compra::whereBetween('created_at', [$fechaApertura, $fechaCierre])->sum('costo_total');
+            $totalGastos  = Gasto::whereBetween('created_at', [$fechaApertura, $fechaCierre])->sum('monto');
 
             $ventasEsperadas = ($turno->monto_inicial + $ventasEfectivo) - $totalCompras - $totalGastos;
 

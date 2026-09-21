@@ -13,6 +13,17 @@
         </p>
     </div>
 
+    {{-- BUSCADOR --}}
+    <div class="flex gap-3 mb-2">
+        <div class="relative flex-1 max-w-sm">
+            <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+            </svg>
+            <input type="text" id="buscador-caja" placeholder="BUSCAR CAJERO O FECHA..."
+                class="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#0d0d0d] border border-zinc-200 dark:border-white/10 rounded-2xl font-black italic uppercase text-sm text-zinc-800 dark:text-white placeholder-zinc-300 dark:placeholder-zinc-700 focus:outline-none focus:border-red-500 transition shadow-sm">
+        </div>
+    </div>
+
     {{-- TABLA --}}
     <div class="w-full bg-white dark:bg-[#0d0d0d] rounded-3xl border border-zinc-200 dark:border-white/5 overflow-hidden shadow-2xl">
         <div class="h-1.5 w-full bg-gradient-to-r from-red-600 via-red-900 to-black"></div>
@@ -31,7 +42,9 @@
                 </thead>
                 <tbody class="divide-y divide-zinc-100 dark:divide-white/5">
                     @forelse($cortes as $corte)
-                        <tr class="group hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors">
+                        <tr class="fila-caja group hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
+                            data-cajero="{{ strtolower($corte->usuario->nombre ?? '') }}"
+                            data-fecha="{{ \Carbon\Carbon::parse($corte->fecha_apertura)->format('d/m/Y') }}">
                             <td class="p-5 pl-8 font-black italic uppercase text-zinc-900 dark:text-white">
                                 {{ $corte->usuario->nombre ?? 'N/A' }}
                             </td>
@@ -71,4 +84,15 @@
     </div>
 </div>
 
+@push('scripts')
+<script>
+    document.getElementById('buscador-caja').addEventListener('input', function() {
+        const texto = this.value.toLowerCase().trim();
+        document.querySelectorAll('.fila-caja').forEach(f => {
+            const ok = !texto || f.dataset.cajero.includes(texto) || f.dataset.fecha.includes(texto);
+            f.style.display = ok ? '' : 'none';
+        });
+    });
+</script>
+@endpush
 @endsection

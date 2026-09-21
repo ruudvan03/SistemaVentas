@@ -50,10 +50,20 @@
     <div class="lg:col-span-4 flex flex-col gap-5 sticky top-4">
         {{-- SCANNER --}}
         <div class="bg-white dark:bg-[#0d0d0d] border border-red-600/30 p-5 rounded-2xl shadow-2xl">
-            <label class="block text-red-600 text-[10px] font-black mb-2 uppercase tracking-[0.4em]">Escáner de Código</label>
+            <div class="flex items-center justify-between mb-2">
+                <label class="text-red-600 text-[10px] font-black uppercase tracking-[0.4em]">Escáner de Código</label>
+                <button id="btn-camara" type="button" title="Escanear con cámara"
+                    class="flex items-center gap-1.5 bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white border border-red-600/30 px-3 py-1.5 rounded-xl transition-all cursor-pointer text-[10px] font-black uppercase tracking-widest">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Cámara
+                </button>
+            </div>
             <input type="text" id="scanner" autofocus autocomplete="off"
                 class="w-full bg-zinc-100 dark:bg-black border-b-2 border-red-600 text-red-600 dark:text-red-500 text-4xl p-3 focus:outline-none font-black placeholder-zinc-300 dark:placeholder-zinc-900 transition-all focus:bg-red-600/5 rounded-t-lg"
-                placeholder="||||||||||||||||||||||">
+                placeholder="||||||||||||||||">
         </div>
 
         {{-- TOTAL --}}
@@ -290,5 +300,65 @@
         </div>
     </div>
 </div>
+
+{{-- 6. MODAL CÁMARA --}}
+<div id="modal-camara" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[99999] hidden flex items-center justify-center p-4 w-screen h-screen">
+    <div class="bg-[#0d0d0d] border border-white/10 w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl relative mx-auto my-auto">
+
+        <div class="flex justify-between items-center px-5 py-4 border-b border-white/5">
+            <div>
+                <p class="text-[10px] font-black text-red-500 uppercase tracking-widest">Cámara activa</p>
+                <h3 class="text-white font-black italic uppercase text-lg">Escanear código</h3>
+            </div>
+            <button id="btn-cerrar-camara" type="button"
+                class="text-zinc-500 hover:text-white transition text-2xl font-black cursor-pointer leading-none">&times;</button>
+        </div>
+
+        {{-- Visor de cámara --}}
+        <div class="relative bg-black" style="aspect-ratio: 4/3;">
+            <video id="camara-video" class="w-full h-full object-cover" playsinline muted></video>
+
+            {{-- Línea de escaneo animada --}}
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="relative w-56 h-40">
+                    {{-- Esquinas --}}
+                    <span class="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-red-500 rounded-tl-lg"></span>
+                    <span class="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-red-500 rounded-tr-lg"></span>
+                    <span class="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-red-500 rounded-bl-lg"></span>
+                    <span class="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-red-500 rounded-br-lg"></span>
+                    {{-- Línea de escaneo --}}
+                    <div id="linea-escaneo" class="absolute left-2 right-2 h-0.5 bg-red-500/70 shadow-[0_0_6px_rgba(239,68,68,0.8)]" style="top: 50%; animation: scan 2s ease-in-out infinite;"></div>
+                </div>
+            </div>
+
+            {{-- Estado --}}
+            <div class="absolute bottom-3 left-0 right-0 flex justify-center">
+                <span id="camara-estado" class="bg-black/60 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">
+                    Apunta al código de barras
+                </span>
+            </div>
+        </div>
+
+        {{-- Selector de cámara si hay varias --}}
+        <div class="p-4 flex items-center justify-between gap-3">
+            <select id="selector-camara"
+                class="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-xs font-bold outline-none cursor-pointer">
+            </select>
+            <button id="btn-flip-camara" type="button" title="Cambiar cámara"
+                class="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-zinc-400 hover:text-white transition cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes scan {
+    0%, 100% { top: 10%; }
+    50%       { top: 85%; }
+}
+</style>
 
 @endpush

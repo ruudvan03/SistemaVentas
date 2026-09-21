@@ -81,6 +81,62 @@
                 </div>
             </div>
 
+            {{-- GRÁFICA DONUT MÉTODOS DE PAGO --}}
+            @php
+                $totalGrafica = max($ventasEfectivo + $ventasTarjeta + $ventasTransferencia, 0.01);
+                $pEfectivo     = round(($ventasEfectivo / $totalGrafica) * 100);
+                $pTarjeta      = round(($ventasTarjeta / $totalGrafica) * 100);
+                $pTransferencia= 100 - $pEfectivo - $pTarjeta;
+            @endphp
+            <div class="bg-white dark:bg-[#0d0d0d] border border-zinc-200 dark:border-white/5 p-5 rounded-2xl">
+                <p class="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-4">Distribución del turno</p>
+                <div class="flex items-center gap-4">
+                    <div class="relative w-24 h-24 shrink-0">
+                        <svg viewBox="0 0 36 36" class="w-24 h-24 -rotate-90">
+                            @php
+                                $circunferencia = 100;
+                                $offset1 = 0;
+                                $offset2 = $pEfectivo;
+                                $offset3 = $pEfectivo + $pTarjeta;
+                            @endphp
+                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#27272a" stroke-width="3"/>
+                            @if($pEfectivo > 0)
+                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#10b981" stroke-width="3"
+                                stroke-dasharray="{{ $pEfectivo }} {{ 100 - $pEfectivo }}"
+                                stroke-dashoffset="{{ -$offset1 }}"/>
+                            @endif
+                            @if($pTarjeta > 0)
+                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3b82f6" stroke-width="3"
+                                stroke-dasharray="{{ $pTarjeta }} {{ 100 - $pTarjeta }}"
+                                stroke-dashoffset="{{ -$offset2 }}"/>
+                            @endif
+                            @if($pTransferencia > 0)
+                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#a855f7" stroke-width="3"
+                                stroke-dasharray="{{ $pTransferencia }} {{ 100 - $pTransferencia }}"
+                                stroke-dashoffset="{{ -$offset3 }}"/>
+                            @endif
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-[10px] font-black text-zinc-900 dark:text-white">{{ $ventasDetalle->count() }}<br><span class="text-[8px] text-zinc-400 font-bold">ventas</span></span>
+                        </div>
+                    </div>
+                    <div class="space-y-2 flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-1.5 text-[10px] font-black uppercase text-zinc-600 dark:text-zinc-300"><span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>Efectivo</span>
+                            <span class="text-[10px] font-black text-emerald-500">{{ $pEfectivo }}%</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-1.5 text-[10px] font-black uppercase text-zinc-600 dark:text-zinc-300"><span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>Tarjeta</span>
+                            <span class="text-[10px] font-black text-blue-500">{{ $pTarjeta }}%</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-1.5 text-[10px] font-black uppercase text-zinc-600 dark:text-zinc-300"><span class="w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>Transf.</span>
+                            <span class="text-[10px] font-black text-purple-500">{{ $pTransferencia }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- TOTAL DEL TURNO --}}
             <div class="bg-zinc-900 dark:bg-white/5 border border-zinc-800 dark:border-white/10 p-5 rounded-2xl flex items-center justify-between">
                 <span class="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Total Vendido en Turno</span>

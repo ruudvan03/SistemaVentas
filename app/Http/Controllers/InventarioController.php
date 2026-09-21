@@ -52,7 +52,7 @@ class InventarioController extends Controller
                     'descripcion' => 'COMPRA MULT. PROV: '.strtoupper($request->proveedor).' - PRODS: '.substr($detallesGasto, 0, 150),
                     'monto' => $totalCompraEntrada,
                     'categoria' => 'INVENTARIO',
-                    'usuario' => auth()->user()->name ?? 'Admin',
+                    'usuario' => auth()->user()->nombre ?? 'Admin', // BUG 1 CORREGIDO: campo es 'nombre', no 'name'
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

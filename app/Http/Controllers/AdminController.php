@@ -29,6 +29,9 @@ class AdminController extends Controller
             ->count();
 
         $productosBajoStock = Producto::where('stock_actual', '<=', 5)->count();
+        $productosCriticos  = Producto::where('stock_actual', '<=', 5)
+            ->orderBy('stock_actual', 'asc')
+            ->get(['descripcion', 'stock_actual', 'stock_minimo', 'unidad_medida']);
 
         $gastosHoy = Gasto::whereDate('created_at', now())->sum('monto');
         $comprasHoy = Compra::whereDate('created_at', now())->sum('costo_total');
@@ -43,6 +46,7 @@ class AdminController extends Controller
             'ventasHoy',
             'numVentas',
             'productosBajoStock',
+            'productosCriticos',
             'gastosHoy',
             'comprasHoy',
             'ultimosCortes'
@@ -52,9 +56,10 @@ class AdminController extends Controller
     public function productos()
     {
         $departamentos = DB::table('departamentos')->get();
-        $productos = Producto::with('departamento')->get();
+        $productos     = Producto::with('departamento')->get();
+        $mostrarStock  = \App\Models\ConfiguracionHardware::actual()->mostrar_stock;
 
-        return view('admin.productos.index', compact('productos', 'departamentos'));
+        return view('admin.productos.index', compact('productos', 'departamentos', 'mostrarStock'));
     }
 
     public function inventarioCajero()
@@ -259,12 +264,20 @@ class AdminController extends Controller
     public function cancelarVenta($id)
     {
         try {
-            $venta = Venta::findOrFail($id);
+            $venta = Venta::with('detalles.producto')->findOrFail($id);
+
+            // BUG 2 CORREGIDO: Restaurar el stock de cada producto antes de eliminar la venta
+            foreach ($venta->detalles as $detalle) {
+                if ($detalle->producto) {
+                    $detalle->producto->increment('stock_actual', $detalle->cantidad);
+                }
+            }
+
             $venta->delete();
 
-            return redirect()->back()->with('success', 'La venta ha sido eliminada permanentemente.');
+            return redirect()->back()->with('success', 'Venta cancelada y stock restaurado correctamente.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'No se pudo eliminar la venta: '.$e->getMessage());
+            return redirect()->back()->with('error', 'No se pudo cancelar la venta: '.$e->getMessage());
         }
     }
 

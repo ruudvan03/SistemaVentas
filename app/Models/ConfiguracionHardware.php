@@ -11,6 +11,13 @@ class ConfiguracionHardware extends Model
     protected $fillable = [
         'impresora_nombre', 'impresora_tipo', 'impresora_ip',
         'cajon_comando_apertura', 'bascula_activada', 'bascula_baud_rate', 'modo_simulado',
+        'mostrar_stock',
+    ];
+
+    protected $casts = [
+        'bascula_activada' => 'boolean',
+        'modo_simulado'    => 'boolean',
+        'mostrar_stock'    => 'boolean',
     ];
 
     public static function actual(): self

@@ -73,20 +73,23 @@ class CortesCajaSheet implements FromCollection, WithHeadings, WithTitle
 {
     public function collection()
     {
-        // Usamos los campos exactos de tu tabla: total_esperado, total_contado, difference
-        return CorteCaja::select(
-            'id',
-            'fecha_cierre',
-            'total_esperado',
-            'total_contado',
-            'difference',
-            'usuario_id'
-        )->orderBy('fecha_cierre', 'desc')->get();
+        // BUG 8 CORREGIDO: cargar la relación usuario para mostrar el nombre, no solo el ID
+        return CorteCaja::with('usuario')
+            ->orderBy('fecha_cierre', 'desc')
+            ->get()
+            ->map(fn ($corte) => [
+                'id'            => $corte->id,
+                'fecha_cierre'  => $corte->fecha_cierre?->format('d/m/Y H:i') ?? 'Abierto',
+                'total_esperado'=> $corte->total_esperado,
+                'total_contado' => $corte->total_contado,
+                'difference'    => $corte->difference,
+                'cajero'        => $corte->usuario?->nombre ?? 'N/A',
+            ]);
     }
 
     public function headings(): array
     {
-        return ['ID Corte', 'Fecha Cierre', 'Esperado ($)', 'Contado ($)', 'Diferencia ($)', 'Cajero ID'];
+        return ['ID Corte', 'Fecha Cierre', 'Esperado ($)', 'Contado ($)', 'Diferencia ($)', 'Cajero'];
     }
 
     public function title(): string

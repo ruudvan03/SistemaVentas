@@ -24,7 +24,7 @@ class GastoController extends Controller
             'descripcion' => strtoupper($request->descripcion),
             'monto' => $request->monto,
             'categoria' => $request->categoria ?? 'GENERAL',
-            'usuario' => auth()->user()->name ?? 'Admin',
+            'usuario' => auth()->user()->nombre ?? 'Admin', // BUG 1 CORREGIDO: campo es 'nombre', no 'name'
         ]);
 
         return back()->with('success', 'Gasto registrado correctamente');

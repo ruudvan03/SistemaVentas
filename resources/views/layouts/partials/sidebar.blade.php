@@ -17,6 +17,31 @@
 <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Tooltips para sidebar colapsado */
+    .nav-tooltip { position: relative; }
+    .nav-tooltip .tooltip-label {
+        position: absolute;
+        left: calc(100% + 12px);
+        top: 50%;
+        transform: translateY(-50%);
+        background: #18181b;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        white-space: nowrap;
+        padding: 5px 10px;
+        border-radius: 8px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .15s, transform .15s;
+        transform: translateY(-50%) translateX(-4px);
+        z-index: 9999;
+        border: 1px solid rgba(255,255,255,.08);
+    }
+    .nav-tooltip:hover .tooltip-label { opacity: 1; transform: translateY(-50%) translateX(0); }
 </style>
 
 <aside
@@ -76,7 +101,7 @@
     @if(!$esAdmin && !\App\Models\CorteCaja::turnoActivo(Auth::id()))
         <a href="{{ route('caja.apertura') }}"
             :title="colapsado ? 'Apertura de Caja' : ''"
-            :class="[colapsado ? 'justify-center' : 'space-x-3', {{ request()->routeIs('caja.apertura') ? "'$active'" : "'$inactive'" }}]"
+            :class="[colapsado ? 'justify-center nav-tooltip' : 'space-x-3', {{ request()->routeIs('caja.apertura') ? "'$active'" : "'$inactive'" }}]"
             class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
             <i class="fas fa-door-open text-sm flex-shrink-0"></i>
             <span x-show="!colapsado" x-transition class="whitespace-nowrap">Apertura de Caja</span>
@@ -85,16 +110,17 @@
 
         <a href="{{ route('ventas.index') }}"
             :title="colapsado ? 'Punto de Venta' : ''"
-            :class="[colapsado ? 'justify-center' : 'space-x-3', {{ request()->routeIs('ventas.index') ? "'$active'" : "'$inactive'" }}]"
-            class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
+            :class="[colapsado ? 'justify-center nav-tooltip' : 'space-x-3', {{ request()->routeIs('ventas.index') ? "'$active'" : "'$inactive'" }}]"
+            class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all relative">
             <i class="fas fa-cash-register text-sm flex-shrink-0"></i>
             <span x-show="!colapsado" x-transition class="whitespace-nowrap">Punto de Venta</span>
+            <span x-show="colapsado" class="tooltip-label">Punto de Venta</span>
         </a>
 
         @if(!$esAdmin && $user->tienePermiso('inventario.ver'))
             <a href="{{ route('ventas.inventario') }}"
                 :title="colapsado ? 'Inventario' : ''"
-                :class="[colapsado ? 'justify-center' : 'space-x-3', {{ request()->routeIs('ventas.inventario') ? "'$active'" : "'$inactive'" }}]"
+                :class="[colapsado ? 'justify-center nav-tooltip' : 'space-x-3', {{ request()->routeIs('ventas.inventario') ? "'$active'" : "'$inactive'" }}]"
                 class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
                 <i class="fas fa-boxes text-sm flex-shrink-0"></i>
                 <span x-show="!colapsado" x-transition class="whitespace-nowrap">Inventario</span>
@@ -103,7 +129,7 @@
 
         <a href="{{ route('admin.corte') }}"
             :title="colapsado ? 'Corte de Caja' : ''"
-            :class="[colapsado ? 'justify-center' : 'space-x-3', {{ request()->routeIs('admin.corte') ? "'$active'" : "'$inactive'" }}]"
+            :class="[colapsado ? 'justify-center nav-tooltip' : 'space-x-3', {{ request()->routeIs('admin.corte') ? "'$active'" : "'$inactive'" }}]"
             class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
             <i class="fas fa-calculator text-sm flex-shrink-0"></i>
             <span x-show="!colapsado" x-transition class="whitespace-nowrap">Flujo de caja</span>
@@ -114,7 +140,7 @@
                 <p x-show="!colapsado" x-transition class="text-[9px] font-black text-red-600 uppercase tracking-[0.2em] mb-2 ml-1 whitespace-nowrap">Administración</p>
 
                 @if($user->tienePermiso('dashboard.ver'))
-                <a href="{{ route('admin.dashboard') }}" :title="colapsado ? 'Dashboard' : ''" :class="[colapsado ? 'justify-center' : 'space-x-3', {{ request()->routeIs('admin.dashboard') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
+                <a href="{{ route('admin.dashboard') }}" :title="colapsado ? 'Dashboard' : ''" :class="[colapsado ? 'justify-center nav-tooltip' : 'space-x-3', {{ request()->routeIs('admin.dashboard') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
                     <i class="fas fa-chart-pie text-sm flex-shrink-0"></i>
                     <span x-show="!colapsado" x-transition class="whitespace-nowrap">Dashboard</span>
                 </a>
@@ -122,7 +148,7 @@
 
                 {{-- DEPARTAMENTOS --}}
                 @if($user->tienePermiso('departamentos.gestionar'))
-                <a href="{{ route('departamentos.index') }}" :title="colapsado ? 'Categoría' : ''" :class="[colapsado ? 'justify-center' : 'space-x-3', {{ request()->routeIs('departamentos.*') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
+                <a href="{{ route('departamentos.index') }}" :title="colapsado ? 'Categoría' : ''" :class="[colapsado ? 'justify-center nav-tooltip' : 'space-x-3', {{ request()->routeIs('departamentos.*') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
                     <i class="fas fa-tag text-sm flex-shrink-0"></i>
                     <span x-show="!colapsado" x-transition class="whitespace-nowrap">Categoría</span>
                 </a>
@@ -130,7 +156,7 @@
 
                 {{-- PRODUCTOS --}}
                 @if($user->tienePermiso('productos.gestionar'))
-                <a href="{{ route('productos.index') }}" :title="colapsado ? 'Productos' : ''" :class="[colapsado ? 'justify-center' : 'space-x-3', {{ request()->routeIs('productos.*') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
+                <a href="{{ route('productos.index') }}" :title="colapsado ? 'Productos' : ''" :class="[colapsado ? 'justify-center nav-tooltip' : 'space-x-3', {{ request()->routeIs('productos.*') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
                     <i class="fas fa-box text-sm flex-shrink-0"></i>
                     <span x-show="!colapsado" x-transition class="whitespace-nowrap">Productos</span>
                 </a>
@@ -138,7 +164,7 @@
 
                 {{-- HISTORIAL DE CAJA --}}
                 @if($user->tienePermiso('caja.historial'))
-                <a href="{{ route('admin.cajas.index') }}" :title="colapsado ? 'Historial de Caja' : ''" :class="[colapsado ? 'justify-center' : 'space-x-3', {{ request()->routeIs('admin.cajas.*') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
+                <a href="{{ route('admin.cajas.index') }}" :title="colapsado ? 'Historial de Caja' : ''" :class="[colapsado ? 'justify-center nav-tooltip' : 'space-x-3', {{ request()->routeIs('admin.cajas.*') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
                     <i class="fas fa-history text-sm flex-shrink-0"></i>
                     <span x-show="!colapsado" x-transition class="whitespace-nowrap">Historial de Caja</span>
                 </a>
@@ -146,7 +172,7 @@
 
                 {{-- REPORTES GENERAL --}}
                 @if($user->tienePermiso('reportes.ver'))
-                <a href="{{ route('admin.reportes') }}" :title="colapsado ? 'Reportes General' : ''" :class="[colapsado ? 'justify-center' : 'space-x-3', {{ request()->routeIs('admin.reportes') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
+                <a href="{{ route('admin.reportes') }}" :title="colapsado ? 'Reportes General' : ''" :class="[colapsado ? 'justify-center nav-tooltip' : 'space-x-3', {{ request()->routeIs('admin.reportes') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
                     <i class="fas fa-chart-bar text-sm flex-shrink-0"></i>
                     <span x-show="!colapsado" x-transition class="whitespace-nowrap">Reportes General</span>
                 </a>
@@ -154,7 +180,7 @@
 
                 {{-- COMPRAS --}}
                 @if($user->tienePermiso('compras.ver'))
-                <a href="{{ route('admin.compras.index') }}" :title="colapsado ? 'Compras' : ''" :class="[colapsado ? 'justify-center' : 'space-x-3', {{ request()->routeIs('admin.compras.index') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
+                <a href="{{ route('admin.compras.index') }}" :title="colapsado ? 'Compras' : ''" :class="[colapsado ? 'justify-center nav-tooltip' : 'space-x-3', {{ request()->routeIs('admin.compras.index') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
                     <i class="fas fa-shopping-bag text-sm flex-shrink-0"></i>
                     <span x-show="!colapsado" x-transition class="whitespace-nowrap">Proveedores</span>
                 </a>
@@ -162,7 +188,7 @@
 
                 {{-- CONFIGURACIÓN DE HARDWARE --}}
                 @if($user->tienePermiso('hardware.configurar'))
-                <a href="{{ route('admin.hardware.edit') }}" :title="colapsado ? 'Config. Hardware' : ''" :class="[colapsado ? 'justify-center' : 'space-x-3', {{ request()->routeIs('admin.hardware.*') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
+                <a href="{{ route('admin.hardware.edit') }}" :title="colapsado ? 'Config. Hardware' : ''" :class="[colapsado ? 'justify-center nav-tooltip' : 'space-x-3', {{ request()->routeIs('admin.hardware.*') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
                     <i class="fas fa-microchip text-sm flex-shrink-0"></i>
                     <span x-show="!colapsado" x-transition class="whitespace-nowrap">Configuracion</span>
                 </a>
@@ -170,7 +196,7 @@
 
                 {{-- GESTIONAR CAJEROS --}}
                 @if($user->tienePermiso('usuarios.gestionar'))
-                <a href="{{ route('admin.usuarios.index') }}" :title="colapsado ? 'Gestionar Cajeros' : ''" :class="[colapsado ? 'justify-center' : 'space-x-3', {{ request()->routeIs('admin.usuarios.*') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
+                <a href="{{ route('admin.usuarios.index') }}" :title="colapsado ? 'Gestionar Cajeros' : ''" :class="[colapsado ? 'justify-center nav-tooltip' : 'space-x-3', {{ request()->routeIs('admin.usuarios.*') ? "'$active'" : "'$inactive'" }}]" class="flex items-center p-3 rounded-xl font-bold italic uppercase text-xs tracking-wide transition-all">
                     <i class="fas fa-users-cog text-sm flex-shrink-0"></i>
                     <span x-show="!colapsado" x-transition class="whitespace-nowrap">Gestionar Cajeros</span>
                 </a>
@@ -184,6 +210,37 @@
                 <span class="text-zinc-900 dark:text-white font-black italic uppercase text-xs whitespace-nowrap">{{ Auth::user()->username }}</span>
             </div>
         </div>
+
+        {{-- Indicador de turno activo --}}
+        @php $turnoActivo = \App\Models\CorteCaja::turnoActivo(Auth::id()); @endphp
+        @if($turnoActivo)
+        <div x-show="!colapsado" x-transition
+            class="mx-2 mb-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl"
+            id="indicador-turno">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span>
+                    Turno activo
+                </span>
+                <span class="text-[9px] font-black text-zinc-400 uppercase" id="reloj-turno">--:--</span>
+            </div>
+            <p class="text-[9px] text-zinc-400 font-bold uppercase">Desde {{ $turnoActivo->fecha_apertura->format('H:i') }}</p>
+        </div>
+        <script>
+            (function() {
+                const apertura = new Date('{{ $turnoActivo->fecha_apertura->toIso8601String() }}');
+                function actualizarReloj() {
+                    const diff = Math.floor((Date.now() - apertura) / 1000);
+                    const h = Math.floor(diff / 3600).toString().padStart(2,'0');
+                    const m = Math.floor((diff % 3600) / 60).toString().padStart(2,'0');
+                    const el = document.getElementById('reloj-turno');
+                    if (el) el.textContent = `${h}h ${m}m`;
+                }
+                actualizarReloj();
+                setInterval(actualizarReloj, 30000);
+            })();
+        </script>
+        @endif
     </nav>
 
     {{-- FOOTER CON BOTÓN DE MODO Y CERRAR SESIÓN --}}

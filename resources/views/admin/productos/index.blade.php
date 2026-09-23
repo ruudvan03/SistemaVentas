@@ -428,13 +428,19 @@
 
         try {
             _streamInv = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }
+                video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
             });
             video.srcObject = _streamInv;
-            await video.play();
+
+            await new Promise(res => {
+                video.onloadedmetadata = () => res();
+                video.play();
+            });
+
             if (estado) estado.textContent = 'Apunta al código de barras';
 
             if (!window.ZXing) {
+                if (estado) estado.textContent = 'Cargando lector...';
                 await new Promise((res, rej) => {
                     const s = document.createElement('script');
                     s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js';
@@ -442,6 +448,8 @@
                     document.head.appendChild(s);
                 });
             }
+
+            if (estado) estado.textContent = 'Apunta al código de barras';
 
             const hints = new Map();
             hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, [
@@ -451,7 +459,11 @@
             ]);
             hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
 
-            _lectorInv = new window.ZXing.BrowserMultiFormatReader(hints);
+            _lectorInv = new window.ZXing.BrowserMultiFormatReader(hints, {
+                delayBetweenScanAttempts: 150,
+                delayBetweenScanSuccess: 500,
+            });
+
             _lectorInv.decodeFromVideoElement(video, (resultado) => {
                 if (!resultado) return;
                 cerrarCamaraInv();
@@ -459,7 +471,6 @@
                 if (input) {
                     input.value = resultado.getText();
                     input.focus();
-                    // Feedback visual
                     input.classList.add('border-orange-500', 'bg-orange-500/5');
                     setTimeout(() => input.classList.remove('border-orange-500', 'bg-orange-500/5'), 1500);
                 }

@@ -32,25 +32,28 @@ async function abrirCamara(idx = 0) {
         streamActivo.getTracks().forEach(t => t.stop());
         streamActivo = null;
     }
+    if (lectorCamara) { try { lectorCamara.reset(); } catch {} lectorCamara = null; }
 
     try {
-        // 1. Pedir permiso con cámara trasera por defecto (environment)
-        //    Esto también desbloquea los deviceIds reales en enumerateDevices
         const constraints = dispositivos.length && dispositivos[idx]?.deviceId
-            ? { video: { deviceId: { exact: dispositivos[idx].deviceId } } }
-            : { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } } };
+            ? { video: { deviceId: { exact: dispositivos[idx].deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } } }
+            : { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } };
 
         streamActivo = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = streamActivo;
-        await video.play();
+
+        // Esperar a que el video esté listo
+        await new Promise(res => {
+            video.onloadedmetadata = () => res();
+            video.play();
+        });
 
         if (estado) estado.textContent = 'Apunta al código de barras';
 
-        // 2. Ahora que tenemos permiso, listar cámaras con deviceIds completos
         await listarCamaras();
 
-        // Cargar ZXing si no está
         if (!window.ZXing) {
+            if (estado) estado.textContent = 'Cargando lector...';
             await new Promise((res, rej) => {
                 const s = document.createElement('script');
                 s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js';
@@ -58,6 +61,8 @@ async function abrirCamara(idx = 0) {
                 document.head.appendChild(s);
             });
         }
+
+        if (estado) estado.textContent = 'Apunta al código de barras';
 
         const hints = new Map();
         hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, [
@@ -71,12 +76,18 @@ async function abrirCamara(idx = 0) {
         ]);
         hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
 
-        lectorCamara = new window.ZXing.BrowserMultiFormatReader(hints);
+        // Usar MultiFormatReader directo sobre canvas para mejor detección en móvil
+        lectorCamara = new window.ZXing.BrowserMultiFormatReader(hints, {
+            delayBetweenScanAttempts: 150,
+            delayBetweenScanSuccess: 500,
+        });
 
-        lectorCamara.decodeFromVideoElement(video, (resultado) => {
-            if (!resultado) return;
-            cerrarCamara();
-            procesarCodigoEscaneado(resultado.getText());
+        lectorCamara.decodeFromVideoElement(video, (resultado, err) => {
+            if (resultado) {
+                cerrarCamara();
+                procesarCodigoEscaneado(resultado.getText());
+            }
+            // Ignorar errores de "no encontrado" que son normales entre frames
         });
 
     } catch (err) {

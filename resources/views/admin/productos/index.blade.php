@@ -421,26 +421,23 @@
         document.getElementById('modal-camara-inv').classList.remove('hidden');
 
         if (_streamInv) { _streamInv.getTracks().forEach(t => t.stop()); _streamInv = null; }
-        if (_lectorInv) { try { _lectorInv.reset(); } catch {} _lectorInv = null; }
+        if (_lectorInv?._stopScan) _lectorInv._stopScan();
+        _lectorInv = null;
 
         const video  = document.getElementById('camara-inv-video');
         const estado = document.getElementById('camara-inv-estado');
 
         try {
             _streamInv = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+                video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
             });
             video.srcObject = _streamInv;
+            await new Promise(res => { video.onloadedmetadata = res; });
+            await video.play();
 
-            await new Promise(res => {
-                video.onloadedmetadata = () => res();
-                video.play();
-            });
-
-            if (estado) estado.textContent = 'Apunta al código de barras';
+            if (estado) estado.textContent = 'Cargando lector...';
 
             if (!window.ZXing) {
-                if (estado) estado.textContent = 'Cargando lector...';
                 await new Promise((res, rej) => {
                     const s = document.createElement('script');
                     s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js';
@@ -451,7 +448,9 @@
 
             if (estado) estado.textContent = 'Apunta al código de barras';
 
-            const hints = new Map();
+            const canvas = document.createElement('canvas');
+            const ctx    = canvas.getContext('2d', { willReadFrequently: true });
+            const hints  = new Map();
             hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, [
                 window.ZXing.BarcodeFormat.EAN_13, window.ZXing.BarcodeFormat.EAN_8,
                 window.ZXing.BarcodeFormat.CODE_128, window.ZXing.BarcodeFormat.CODE_39,
@@ -459,22 +458,39 @@
             ]);
             hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
 
-            _lectorInv = new window.ZXing.BrowserMultiFormatReader(hints, {
-                delayBetweenScanAttempts: 150,
-                delayBetweenScanSuccess: 500,
-            });
+            const reader = new window.ZXing.MultiFormatReader(hints);
+            let escaneando = true;
+            _lectorInv = { _stopScan: () => { escaneando = false; } };
 
-            _lectorInv.decodeFromVideoElement(video, (resultado) => {
-                if (!resultado) return;
-                cerrarCamaraInv();
-                const input = document.getElementById(_inputDestino);
-                if (input) {
-                    input.value = resultado.getText();
-                    input.focus();
-                    input.classList.add('border-orange-500', 'bg-orange-500/5');
-                    setTimeout(() => input.classList.remove('border-orange-500', 'bg-orange-500/5'), 1500);
+            const escanearFrame = () => {
+                if (!escaneando || !_streamInv) return;
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width  = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    try {
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const luminance = new window.ZXing.RGBLuminanceSource(imageData.data, canvas.width, canvas.height);
+                        const bitmap    = new window.ZXing.BinaryBitmap(new window.ZXing.HybridBinarizer(luminance));
+                        const resultado = reader.decode(bitmap);
+                        if (resultado) {
+                            escaneando = false;
+                            cerrarCamaraInv();
+                            const input = document.getElementById(_inputDestino);
+                            if (input) {
+                                input.value = resultado.getText();
+                                input.focus();
+                                input.classList.add('border-orange-500', 'bg-orange-500/5');
+                                setTimeout(() => input.classList.remove('border-orange-500', 'bg-orange-500/5'), 1500);
+                            }
+                            return;
+                        }
+                    } catch (e) { /* NotFoundException normal */ }
                 }
-            });
+                requestAnimationFrame(escanearFrame);
+            };
+
+            requestAnimationFrame(escanearFrame);
 
         } catch (err) {
             if (estado) estado.textContent = err.name === 'NotAllowedError'

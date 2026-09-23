@@ -28,32 +28,25 @@ async function abrirCamara(idx = 0) {
     const estado = document.getElementById('camara-estado');
     if (!video) return;
 
-    if (streamActivo) {
-        streamActivo.getTracks().forEach(t => t.stop());
-        streamActivo = null;
-    }
+    if (streamActivo) { streamActivo.getTracks().forEach(t => t.stop()); streamActivo = null; }
     if (lectorCamara) { try { lectorCamara.reset(); } catch {} lectorCamara = null; }
 
     try {
         const constraints = dispositivos.length && dispositivos[idx]?.deviceId
-            ? { video: { deviceId: { exact: dispositivos[idx].deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } } }
-            : { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } };
+            ? { video: { deviceId: { exact: dispositivos[idx].deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } } }
+            : { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } };
 
         streamActivo = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = streamActivo;
 
-        // Esperar a que el video esté listo
-        await new Promise(res => {
-            video.onloadedmetadata = () => res();
-            video.play();
-        });
-
-        if (estado) estado.textContent = 'Apunta al código de barras';
+        await new Promise(res => { video.onloadedmetadata = res; });
+        await video.play();
 
         await listarCamaras();
 
+        if (estado) estado.textContent = 'Cargando lector...';
+
         if (!window.ZXing) {
-            if (estado) estado.textContent = 'Cargando lector...';
             await new Promise((res, rej) => {
                 const s = document.createElement('script');
                 s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js';
@@ -63,6 +56,10 @@ async function abrirCamara(idx = 0) {
         }
 
         if (estado) estado.textContent = 'Apunta al código de barras';
+
+        // Canvas oculto para capturar frames manualmente
+        const canvas = document.createElement('canvas');
+        const ctx    = canvas.getContext('2d', { willReadFrequently: true });
 
         const hints = new Map();
         hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, [
@@ -76,31 +73,56 @@ async function abrirCamara(idx = 0) {
         ]);
         hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
 
-        // Usar MultiFormatReader directo sobre canvas para mejor detección en móvil
-        lectorCamara = new window.ZXing.BrowserMultiFormatReader(hints, {
-            delayBetweenScanAttempts: 150,
-            delayBetweenScanSuccess: 500,
-        });
+        const reader = new window.ZXing.MultiFormatReader(hints);
+        lectorCamara = reader;
 
-        lectorCamara.decodeFromVideoElement(video, (resultado, err) => {
-            if (resultado) {
-                cerrarCamara();
-                procesarCodigoEscaneado(resultado.getText());
+        let escaneando = true;
+
+        const escanearFrame = () => {
+            if (!escaneando || !streamActivo) return;
+
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width  = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                try {
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const luminance = new window.ZXing.RGBLuminanceSource(imageData.data, canvas.width, canvas.height);
+                    const bitmap    = new window.ZXing.BinaryBitmap(new window.ZXing.HybridBinarizer(luminance));
+                    const resultado = reader.decode(bitmap);
+
+                    if (resultado) {
+                        escaneando = false;
+                        cerrarCamara();
+                        procesarCodigoEscaneado(resultado.getText());
+                        return;
+                    }
+                } catch (e) {
+                    // NotFoundException es normal entre frames — ignorar
+                }
             }
-            // Ignorar errores de "no encontrado" que son normales entre frames
-        });
+
+            requestAnimationFrame(escanearFrame);
+        };
+
+        // Guardar referencia para poder detenerlo al cerrar
+        lectorCamara._stopScan = () => { escaneando = false; };
+
+        requestAnimationFrame(escanearFrame);
 
     } catch (err) {
         const msg = err.name === 'NotAllowedError'
             ? 'Permiso de cámara denegado'
-            : 'No se pudo acceder a la cámara';
+            : 'No se pudo acceder a la cámara: ' + err.message;
         if (estado) estado.textContent = msg;
         notify('error', msg);
     }
 }
 
 function cerrarCamara() {
-    if (lectorCamara) { try { lectorCamara.reset(); } catch {} lectorCamara = null; }
+    if (lectorCamara?._stopScan) lectorCamara._stopScan();
+    if (lectorCamara) { try { lectorCamara.reset?.(); } catch {} lectorCamara = null; }
     if (streamActivo)  { streamActivo.getTracks().forEach(t => t.stop()); streamActivo = null; }
     document.getElementById('modal-camara')?.classList.add('hidden');
     document.getElementById('scanner')?.focus();

@@ -19,6 +19,7 @@ async function listarCamaras() {
         select.innerHTML = dispositivos.map((d, i) =>
             `<option value="${i}">${d.label || 'Cámara ' + (i + 1)}</option>`
         ).join('');
+        select.value = camaraIdx;
     } catch {}
 }
 
@@ -33,9 +34,11 @@ async function abrirCamara(idx = 0) {
     }
 
     try {
-        const constraints = dispositivos.length
-            ? { video: { deviceId: { exact: dispositivos[idx]?.deviceId } } }
-            : { video: { facingMode: { ideal: 'environment' } } };
+        // 1. Pedir permiso con cámara trasera por defecto (environment)
+        //    Esto también desbloquea los deviceIds reales en enumerateDevices
+        const constraints = dispositivos.length && dispositivos[idx]?.deviceId
+            ? { video: { deviceId: { exact: dispositivos[idx].deviceId } } }
+            : { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } } };
 
         streamActivo = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = streamActivo;
@@ -43,6 +46,10 @@ async function abrirCamara(idx = 0) {
 
         if (estado) estado.textContent = 'Apunta al código de barras';
 
+        // 2. Ahora que tenemos permiso, listar cámaras con deviceIds completos
+        await listarCamaras();
+
+        // Cargar ZXing si no está
         if (!window.ZXing) {
             await new Promise((res, rej) => {
                 const s = document.createElement('script');
@@ -53,7 +60,7 @@ async function abrirCamara(idx = 0) {
         }
 
         const hints = new Map();
-        const formatos = [
+        hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, [
             window.ZXing.BarcodeFormat.EAN_13,
             window.ZXing.BarcodeFormat.EAN_8,
             window.ZXing.BarcodeFormat.CODE_128,
@@ -61,17 +68,15 @@ async function abrirCamara(idx = 0) {
             window.ZXing.BarcodeFormat.UPC_A,
             window.ZXing.BarcodeFormat.UPC_E,
             window.ZXing.BarcodeFormat.QR_CODE,
-        ];
-        hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, formatos);
+        ]);
         hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
 
         lectorCamara = new window.ZXing.BrowserMultiFormatReader(hints);
 
         lectorCamara.decodeFromVideoElement(video, (resultado) => {
             if (!resultado) return;
-            const codigo = resultado.getText();
             cerrarCamara();
-            procesarCodigoEscaneado(codigo);
+            procesarCodigoEscaneado(resultado.getText());
         });
 
     } catch (err) {
@@ -121,9 +126,13 @@ function initCamara() {
     document.getElementById('btn-cerrar-camara')?.addEventListener('click', cerrarCamara);
 
     document.getElementById('btn-flip-camara')?.addEventListener('click', async () => {
-        if (!dispositivos.length) return;
+        if (dispositivos.length < 2) {
+            notify('info', 'Solo hay una cámara disponible');
+            return;
+        }
         camaraIdx = (camaraIdx + 1) % dispositivos.length;
-        document.getElementById('selector-camara').value = camaraIdx;
+        const select = document.getElementById('selector-camara');
+        if (select) select.value = camaraIdx;
         await abrirCamara(camaraIdx);
     });
 

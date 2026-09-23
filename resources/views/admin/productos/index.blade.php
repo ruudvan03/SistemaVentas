@@ -168,9 +168,20 @@
         
         <form action="{{ route('productos.store') }}" method="POST" class="grid grid-cols-2 gap-4">
             @csrf
-            <div>
+            <div class="col-span-2 sm:col-span-1">
                 <label class="text-[10px] font-black italic text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-2">Código de Barras (Opcional)</label>
-                <input type="text" name="codigo_barras" class="w-full bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-zinc-900 dark:text-white focus:border-orange-500 outline-none">
+                <div class="relative mt-1">
+                    <input type="text" name="codigo_barras" id="nuevo_codigo_barras"
+                        class="w-full bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 pr-12 text-zinc-900 dark:text-white focus:border-orange-500 outline-none">
+                    <button type="button" onclick="abrirCamaraInventario('nuevo_codigo_barras')"
+                        title="Escanear con cámara"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-orange-500/10 hover:bg-orange-600 text-orange-600 hover:text-white rounded-lg transition-all cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
             <div>
                 <label class="text-[10px] font-black italic text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-2">Departamento</label>
@@ -232,7 +243,21 @@
             @method('PUT')
             <div>
                 <label class="text-[10px] font-black italic text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-2">Código de Barras</label>
-                <input type="text" name="codigo_barras" id="edit_codigo" class="w-full bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-zinc-900 dark:text-white focus:border-orange-500 outline-none">
+            <div class="col-span-2 sm:col-span-1">
+                <label class="text-[10px] font-black italic text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-2">Código de Barras (Opcional)</label>
+                <div class="relative mt-1">
+                    <input type="text" name="codigo_barras" id="edit_codigo"
+                        class="w-full bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 pr-12 text-zinc-900 dark:text-white focus:border-orange-500 outline-none">
+                    <button type="button" onclick="abrirCamaraInventario('edit_codigo')"
+                        title="Escanear con cámara"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-orange-500/10 hover:bg-orange-600 text-orange-600 hover:text-white rounded-lg transition-all cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
             </div>
             <div>
                 <label class="text-[10px] font-black italic text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-2">Departamento</label>
@@ -386,7 +411,77 @@
         window.location.reload();
     }
 
-    // ── Modales ───────────────────────────────────────────────────
+    // ── Cámara para inventario ────────────────────────────────────
+    let _streamInv = null;
+    let _lectorInv = null;
+    let _inputDestino = null;
+
+    window.abrirCamaraInventario = async function(inputId) {
+        _inputDestino = inputId;
+        document.getElementById('modal-camara-inv').classList.remove('hidden');
+
+        if (_streamInv) { _streamInv.getTracks().forEach(t => t.stop()); _streamInv = null; }
+        if (_lectorInv) { try { _lectorInv.reset(); } catch {} _lectorInv = null; }
+
+        const video  = document.getElementById('camara-inv-video');
+        const estado = document.getElementById('camara-inv-estado');
+
+        try {
+            _streamInv = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }
+            });
+            video.srcObject = _streamInv;
+            await video.play();
+            if (estado) estado.textContent = 'Apunta al código de barras';
+
+            if (!window.ZXing) {
+                await new Promise((res, rej) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js';
+                    s.onload = res; s.onerror = rej;
+                    document.head.appendChild(s);
+                });
+            }
+
+            const hints = new Map();
+            hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+                window.ZXing.BarcodeFormat.EAN_13, window.ZXing.BarcodeFormat.EAN_8,
+                window.ZXing.BarcodeFormat.CODE_128, window.ZXing.BarcodeFormat.CODE_39,
+                window.ZXing.BarcodeFormat.UPC_A, window.ZXing.BarcodeFormat.UPC_E,
+            ]);
+            hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
+
+            _lectorInv = new window.ZXing.BrowserMultiFormatReader(hints);
+            _lectorInv.decodeFromVideoElement(video, (resultado) => {
+                if (!resultado) return;
+                cerrarCamaraInv();
+                const input = document.getElementById(_inputDestino);
+                if (input) {
+                    input.value = resultado.getText();
+                    input.focus();
+                    // Feedback visual
+                    input.classList.add('border-orange-500', 'bg-orange-500/5');
+                    setTimeout(() => input.classList.remove('border-orange-500', 'bg-orange-500/5'), 1500);
+                }
+            });
+
+        } catch (err) {
+            if (estado) estado.textContent = err.name === 'NotAllowedError'
+                ? 'Permiso de cámara denegado'
+                : 'No se pudo acceder a la cámara';
+        }
+    };
+
+    function cerrarCamaraInv() {
+        if (_lectorInv) { try { _lectorInv.reset(); } catch {} _lectorInv = null; }
+        if (_streamInv) { _streamInv.getTracks().forEach(t => t.stop()); _streamInv = null; }
+        document.getElementById('modal-camara-inv').classList.add('hidden');
+    }
+
+    document.getElementById('btn-cerrar-camara-inv')?.addEventListener('click', cerrarCamaraInv);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') cerrarCamaraInv();
+    });
     function abrirModalEditar(producto) {
         document.getElementById('edit_codigo').value        = producto.codigo_barras ?? '';
         document.getElementById('edit_descripcion').value   = producto.descripcion ?? '';
@@ -409,6 +504,50 @@
         }
     }
 </script>
+{{-- MODAL CÁMARA INVENTARIO --}}
+<div id="modal-camara-inv" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[99999] hidden flex items-center justify-center p-4">
+    <div class="bg-[#0d0d0d] border border-white/10 w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl">
+        <div class="flex justify-between items-center px-5 py-4 border-b border-white/5">
+            <div>
+                <p class="text-[10px] font-black text-orange-500 uppercase tracking-widest">Cámara activa</p>
+                <h3 class="text-white font-black italic uppercase text-lg">Escanear código</h3>
+            </div>
+            <button id="btn-cerrar-camara-inv" type="button"
+                class="text-zinc-500 hover:text-white transition text-2xl font-black cursor-pointer leading-none">&times;</button>
+        </div>
+
+        <div class="relative bg-black" style="aspect-ratio: 4/3;">
+            <video id="camara-inv-video" class="w-full h-full object-cover" playsinline muted></video>
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="relative w-56 h-40">
+                    <span class="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-orange-500 rounded-tl-lg"></span>
+                    <span class="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-orange-500 rounded-tr-lg"></span>
+                    <span class="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-orange-500 rounded-bl-lg"></span>
+                    <span class="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-orange-500 rounded-br-lg"></span>
+                    <div class="absolute left-2 right-2 h-0.5 bg-orange-500/70 shadow-[0_0_6px_rgba(249,115,22,0.8)]"
+                        style="top:50%; animation: scan 2s ease-in-out infinite;"></div>
+                </div>
+            </div>
+            <div class="absolute bottom-3 left-0 right-0 flex justify-center">
+                <span id="camara-inv-estado" class="bg-black/60 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">
+                    Iniciando cámara...
+                </span>
+            </div>
+        </div>
+
+        <div class="p-4 text-center">
+            <p class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">El código se llenará automáticamente al detectarlo</p>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes scan {
+    0%, 100% { top: 10%; }
+    50%       { top: 85%; }
+}
+</style>
+
 @endpush
 
 @endsection
